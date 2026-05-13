@@ -1,5 +1,9 @@
 # NosyKeys
 
+## v0.9.3-beta (2026-05-13)
+
+End-to-end publishing pipeline verification. No source changes from v0.9.2-beta — first tag with CurseForge and Wago.io API tokens wired into repo secrets, so the BigWigs packager uploads to all three platforms (GitHub Releases + CurseForge + Wago.io) in a single workflow run.
+
 ## v0.9.2-beta (2026-05-13)
 
 Bug fixes and publishing wiring.

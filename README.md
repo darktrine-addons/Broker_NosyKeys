@@ -112,6 +112,10 @@ Licensed under [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html). The full li
 
 ## Changelog
 
+### v0.9.3-beta
+
+End-to-end publishing pipeline verification. No source changes from v0.9.2-beta — first release uploaded to GitHub Releases, CurseForge, and Wago.io in a single packager run.
+
 ### v0.9.2-beta
 
 Bug fixes and publishing wiring.
