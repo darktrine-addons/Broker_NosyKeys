@@ -6,6 +6,10 @@
 local addonName, ns = ...
 
 local addonVersion = C_AddOns.GetAddOnMetadata(addonName, "Version") or "?"
+-- The BigWigs packager substitutes @project-version@ at build time. In a raw
+-- source checkout the literal placeholder reaches us instead; show "dev" so
+-- the footer reads cleanly when running directly from the working tree.
+if addonVersion:sub(1, 1) == "@" then addonVersion = "dev" end
 
 local LDB = LibStub("LibDataBroker-1.1")
 local broker = LDB:NewDataObject("Broker_NosyKeys", {
@@ -347,14 +351,17 @@ local function GetReferenceLevel()
 end
 
 -- Returns a filtered, sorted, capped list of {charKey, classFile, entry} tuples.
--- Filter: ns.db.guildOnlineOnly drops entries whose owners are offline per roster.
+-- Filter: ns.db.guildOnlineOnly drops entries whose owners are offline per roster;
+--         party members are also dropped to avoid duplicating their row from the
+--         Party section (skipped when Party is hidden, so no data is lost).
 -- Sort:   ns.db.guildSortMode is "smart" | "highest" | "alphabetic".
 local function GetGuildEntries()
     if not ns.db or not ns.db.enableGuild or not ns.db.guildKeys then return {} end
     local me, list      = CharLabel(), {}
     local onlineOnly    = ns.db.guildOnlineOnly
+    local partyShown    = (ns.db.showParty ~= false) and (not IsInRaid()) and IsInGroup()
     for charKey, entry in pairs(ns.db.guildKeys) do
-        if charKey ~= me then
+        if charKey ~= me and not (partyShown and partyRoster[charKey]) then
             local baseName = charKey:match("^([^-]+)") or charKey
             if not onlineOnly or guildOnline[baseName] then
                 list[#list + 1] = {
@@ -385,7 +392,8 @@ local function GetGuildEntries()
                 if split then return prefer end
                 local ad, bd = math.abs(al - ref), math.abs(bl - ref)
                 if ad ~= bd then return ad < bd end
-                return al > bl  -- equidistant: prefer the harder key
+                if al ~= bl then return al > bl end  -- equidistant: prefer the harder key
+                return (a.entry.rating or 0) > (b.entry.rating or 0)  -- stable tiebreak
             end)
         end
     else  -- "highest"

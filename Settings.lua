@@ -7,7 +7,7 @@ local addonName, ns = ...
 
 local defaults = {
     -- Guild
-    enableGuild         = false,    -- opt-in: subscribe to guild keystone broadcasts
+    enableGuild         = true,     -- on by default; visibility is the whole point of the addon
     hideMyselfFromGuild = false,    -- privacy: broadcast "no key" to guild even if I have one
     maxGuildEntries     = 15,       -- cap rows in the Guild tooltip section
     guildOnlineOnly     = true,     -- filter to online guildies (most actionable for finding partners)

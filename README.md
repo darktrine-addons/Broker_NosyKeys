@@ -57,7 +57,7 @@ Open the settings panel via **Shift-Right-click** on the broker button, or via *
 
 ### Guild
 
-- **Show guild keys** *(default: Off)* — Subscribe to guildmates' keystone broadcasts and list them in the tooltip. Both sides need a LibKeystone-aware addon installed (BigWigs counts; another NosyKeys install counts).
+- **Show guild keys** *(default: On)* — Subscribe to guildmates' keystone broadcasts and list them in the tooltip. Both sides need a LibKeystone-aware addon installed (BigWigs counts; another NosyKeys install counts). Toggle off if you only care about your own party.
 - **Hide my key from guild** *(default: Off)* — Broadcast "no key" to guildmates even when you have one. Party broadcasts are unaffected. Toggling *Show guild keys* off stops displaying guild keys; it does **not** stop broadcasting your own — this setting is the one that does.
 - **Max guild entries shown** *(default: Top 15)* — Cap on the number of guild rows in the tooltip, applied after the sort.
 - **Online guildmates only** *(default: On)* — Filter the Guild section to guildmates currently online. With a large guild this is usually what you want. Off shows everyone whose key arrived this week.
@@ -119,7 +119,8 @@ Initial public beta.
 - Broker bar: current keystone (`<Dungeon> +<Level>`) or `no key`
 - Tooltip: *You*, *Party*, *Alts*, *Guild* sections with class-colored names, key-tier-colored levels, weekly vault progress (`vault +<N>`), and current-season rating
 - LibKeystone-powered party and guild comm — interoperates with BigWigs and any other LibKeystone-aware addon
-- Guild section is opt-in, persists across `/reload`, wipes on weekly reset
+- Guild section is on by default (toggle to opt out), persists across `/reload`, wipes on weekly reset
+- Party members are deduplicated from the Guild section so a guildmate currently in your party doesn't appear twice
 - Guild filtering: online-only by default to surface guildmates you can actually whisper now
 - Guild sorting: Smart (near my key level), Highest first, or Alphabetic — Smart by default so a +10 player isn't drowned in +20 pushers
 - Per-channel guild hide (privacy: broadcast "no key" to guildmates only)
