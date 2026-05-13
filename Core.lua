@@ -20,6 +20,24 @@ local broker = LDB:NewDataObject("Broker_NosyKeys", {
 })
 ns.broker = broker  -- exposed for LibDBIcon registration in Settings.lua
 
+-- ── private tooltip frame ────────────────────────────────────────────────────
+-- 12.x "addon apocalypse": reading from C_MythicPlus.GetOwnedKeystoneLevel /
+-- C_ChallengeMode.GetMapUIInfo (and similar keystone APIs) and doing
+-- arithmetic / comparisons on the returned values taints our Lua control
+-- flow. If we then write the resulting strings into the SHARED GameTooltip,
+-- the tooltip becomes globally tainted — every subsequent Blizzard
+-- operation on GameTooltip (our Hide, their own tooltips, widget cleanup)
+-- inherits the taint and triggers "attempt to compare a secret number
+-- value" errors deep in layout code.
+--
+-- Containment: use a dedicated GameTooltipTemplate frame for our own UI.
+-- Identical look and AddLine/AddDoubleLine behaviour as the shared one,
+-- but Blizzard never touches it, so our taint stays scoped.
+local Tooltip = CreateFrame("GameTooltip",
+                            "BrokerNosyKeysTooltip",
+                            UIParent,
+                            "GameTooltipTemplate")
+
 -- ── tooltip colors ────────────────────────────────────────────────────────────
 -- teal for static labels, white for dynamic values, orange for interaction hints,
 -- grey for section headers and "no key" placeholders.
@@ -144,7 +162,8 @@ local function RecordSelf()
 
     local _, classFile = UnitClass("player")
     ns.db.alts = ns.db.alts or {}
-    ns.db.alts[CharLabel()] = {
+    local label = CharLabel()
+    ns.db.alts[label] = {
         mapID      = mapID,
         level      = level,
         mapName    = mapName,
@@ -154,6 +173,18 @@ local function RecordSelf()
         classFile  = classFile,
         lastSeen   = time(),
     }
+
+    -- One-shot migration: older sessions sometimes stored this char under
+    -- just the player name (no "-Realm" suffix), back when
+    -- GetNormalizedRealmName returned "" during early addon-load. The
+    -- exact-match filter in GetAltEntries can't recognise that legacy key
+    -- as "me", so the current char keeps appearing in the Alts section
+    -- alongside its proper Name-Realm entry. Drop the legacy key whenever
+    -- we re-record this char.
+    local nameOnly = UnitName("player")
+    if nameOnly and nameOnly ~= label and ns.db.alts[nameOnly] then
+        ns.db.alts[nameOnly] = nil
+    end
 end
 ns.RecordSelf = RecordSelf
 
@@ -542,24 +573,24 @@ end
 broker.OnEnter = function(self)
     -- Anchor below the bar when in the top half, above when in the bottom half.
     local _, frameY = self:GetCenter()
-    GameTooltip:SetOwner(self, "ANCHOR_NONE")
+    Tooltip:SetOwner(self, "ANCHOR_NONE")
     if frameY and frameY > (GetScreenHeight() / 2) then
-        GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
+        Tooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
     else
-        GameTooltip:SetPoint("BOTTOMLEFT", self, "TOPLEFT")
+        Tooltip:SetPoint("BOTTOMLEFT", self, "TOPLEFT")
     end
 
-    GameTooltip:SetText("NosyKeys", CV_r, CV_g, CV_b)
+    Tooltip:SetText("NosyKeys", CV_r, CV_g, CV_b)
 
     -- ── You ───────────────────────────────────────────────────────────────────
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("You", CS_r, CS_g, CS_b)
+    Tooltip:AddLine(" ")
+    Tooltip:AddLine("You", CS_r, CS_g, CS_b)
 
     local _, level, name        = GetOwnedKey()
     local rating                = GetMyRating()
     local _, weeklyBest         = GetVaultInfo()
     local right, rr, rg, rb     = FormatRow(level, name, rating, weeklyBest, false)
-    GameTooltip:AddDoubleLine(CharLabel(), right, CV_r, CV_g, CV_b, rr, rg, rb)
+    Tooltip:AddDoubleLine(CharLabel(), right, CV_r, CV_g, CV_b, rr, rg, rb)
 
     local db = ns.db or {}
 
@@ -568,8 +599,8 @@ broker.OnEnter = function(self)
     if db.showParty ~= false then
         local party = GetPartyEntries()
         if #party > 0 then
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Party", CS_r, CS_g, CS_b)
+            Tooltip:AddLine(" ")
+            Tooltip:AddLine("Party", CS_r, CS_g, CS_b)
             for _, item in ipairs(party) do
                 local nr, ng, nb = ClassColor(item.classFile)
                 local e = item.entry
@@ -580,7 +611,7 @@ broker.OnEnter = function(self)
                     -- Roster member who hasn't responded — likely no LibKeystone-aware addon.
                     right, rr, rg, rb = "—", CS_r, CS_g, CS_b
                 end
-                GameTooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
+                Tooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
             end
         end
     end
@@ -589,8 +620,8 @@ broker.OnEnter = function(self)
     if db.showAlts ~= false then
         local alts = GetAltEntries()
         if #alts > 0 then
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Alts", CS_r, CS_g, CS_b)
+            Tooltip:AddLine(" ")
+            Tooltip:AddLine("Alts", CS_r, CS_g, CS_b)
             local now = time()
             for _, item in ipairs(alts) do
                 local e = item.entry
@@ -598,7 +629,7 @@ broker.OnEnter = function(self)
                 local nr, ng, nb = ClassColor(e.classFile)
                 if stale then nr, ng, nb = Fade(nr, ng, nb) end
                 local right, rr, rg, rb = FormatRow(e.level, e.mapName, e.rating, e.weeklyBest, stale)
-                GameTooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
+                Tooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
             end
         end
     end
@@ -607,32 +638,32 @@ broker.OnEnter = function(self)
     if db.enableGuild then
         local guild = GetGuildEntries()
         if #guild > 0 then
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Guild", CS_r, CS_g, CS_b)
+            Tooltip:AddLine(" ")
+            Tooltip:AddLine("Guild", CS_r, CS_g, CS_b)
             for _, item in ipairs(guild) do
                 local nr, ng, nb = ClassColor(item.classFile)
                 local e = item.entry
                 local right, rr, rg, rb = FormatRow(e.level, e.mapName, e.rating, nil, false)
-                GameTooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
+                Tooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
             end
         end
     end
 
     -- ── Interaction hints ────────────────────────────────────────────────────
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddDoubleLine("Click",            "open the keystone holder", CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
-    GameTooltip:AddDoubleLine("Shift-Click",      "link your key to chat",    CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
-    GameTooltip:AddDoubleLine("Shift-RightClick", "open settings",            CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
+    Tooltip:AddLine(" ")
+    Tooltip:AddDoubleLine("Click",            "open the keystone holder", CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
+    Tooltip:AddDoubleLine("Shift-Click",      "link your key to chat",    CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
+    Tooltip:AddDoubleLine("Shift-RightClick", "open settings",            CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
 
     -- ── Footer: addon name + version, right-aligned, faint grey ──────────────
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddDoubleLine("", "NosyKeys  v" .. addonVersion, 0, 0, 0, 0.45, 0.45, 0.45)
+    Tooltip:AddLine(" ")
+    Tooltip:AddDoubleLine("", "NosyKeys  v" .. addonVersion, 0, 0, 0, 0.45, 0.45, 0.45)
 
-    GameTooltip:Show()
+    Tooltip:Show()
 end
 
 broker.OnLeave = function(self)
-    GameTooltip:Hide()
+    Tooltip:Hide()
 end
 
 -- ── click handlers ────────────────────────────────────────────────────────────
