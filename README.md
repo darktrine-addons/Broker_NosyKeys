@@ -112,6 +112,23 @@ Licensed under [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html). The full li
 
 ## Changelog
 
+### v0.9.2-beta
+
+Bug fixes and publishing wiring.
+
+- Fix duplicate alt rows when realm wasn't ready at early addon-load (bare `Name` row alongside `Name-Realm`). One-time SavedVariables migration drops legacy bare-name keys.
+- Contain WoW 12.x keystone-API taint into a private tooltip frame so the shared `GameTooltip` stays clean.
+- Wire CurseForge and Wago project IDs for automatic packager uploads.
+
+### v0.9.1-beta
+
+Polish from first in-game test.
+
+- Dev-build footer (no more literal `@project-version@`)
+- Guild dedup against Party
+- Deterministic smart-sort tiebreaker
+- Guild visibility default flipped on
+
 ### v0.9.0-beta
 
 Initial public beta.

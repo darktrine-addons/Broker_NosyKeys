@@ -31,6 +31,19 @@ sf:SetScript("OnEvent", function(self, event, name)
     for k, v in pairs(defaults) do
         if db[k] == nil then db[k] = v end
     end
+
+    -- One-time DB migration: drop entries whose key isn't a proper Name-Realm string.
+    -- Older sessions could store a bare "Artherio" when GetNormalizedRealmName briefly
+    -- returned "" during early addon-load, leaving a ghost row alongside "Artherio-Elune".
+    -- Cheap to run on every load; "All keys valid → zero deletions."
+    for _, tbl in pairs({ db.alts, db.guildKeys }) do
+        for charKey in pairs(tbl) do
+            if type(charKey) ~= "string" or not charKey:match("^[^-]+-.+$") then
+                tbl[charKey] = nil
+            end
+        end
+    end
+
     ns.db = db
 
     -- Register minimap button (LibDBIcon manages show/hide via its own right-click menu).

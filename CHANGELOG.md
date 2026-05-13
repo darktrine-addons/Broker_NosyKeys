@@ -1,5 +1,23 @@
 # NosyKeys
 
+## v0.9.2-beta (2026-05-13)
+
+Bug fixes and publishing wiring.
+
+- Fix duplicate alt rows when `GetNormalizedRealmName()` briefly returned "" during early addon-load, producing a bare `Name` entry alongside the proper `Name-Realm` one. `CharLabel()` is now strict (returns nil if realm isn't ready) and `RecordSelf()` skips the write until a valid label is available. Read-side callers tolerate the nil.
+- One-time SavedVariables migration scrubs any pre-existing bare-name entries from alts and guild keys on next load.
+- Contain WoW 12.x keystone-API taint into a private `GameTooltipTemplate` frame instead of the shared `GameTooltip`, so reading from `C_MythicPlus` / `C_ChallengeMode` no longer leaks taint into Blizzard's own tooltip handling.
+- Wire CurseForge and Wago project IDs into the TOC, enabling automatic packager uploads on tag push.
+
+## v0.9.1-beta (2026-05-13)
+
+Polish from first in-game test.
+
+- Footer: show "dev" instead of literal "@project-version@" in raw source checkouts (packager substitutes the real tag on build)
+- Guild section: deduplicate party members when Party is rendered, so a guildmate currently in your party doesn't appear in both lists
+- Smart sort: add rating as deterministic tiebreaker when two guildmates are equidistant from the reference level and share the same key level
+- Default "Show guild keys" flipped on; guild visibility is the whole point of the addon and opt-in was over-cautious. "Hide my key from guild" remains the actual privacy lever.
+
 ## v0.9.0-beta (2026-05-13)
 
 Initial public beta.

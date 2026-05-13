@@ -117,10 +117,14 @@ end
 -- Always "Name-NormalizedRealm" so connected-realm collisions are impossible and
 -- the format matches what LibKeystone hands us for party/guild members.
 
+-- Strict: returns nil if either name or realm isn't yet available. GetNormalizedRealmName
+-- can briefly return "" during early addon-load on some clients; we'd rather skip a write
+-- than store an entry under a bare "Artherio" key that later collides with "Artherio-Elune".
 local function CharLabel()
-    local name  = UnitName("player") or "?"
-    local realm = GetNormalizedRealmName() or ""
-    return realm ~= "" and (name .. "-" .. realm) or name
+    local name  = UnitName("player")
+    local realm = GetNormalizedRealmName()
+    if not name or name == "" or not realm or realm == "" then return nil end
+    return name .. "-" .. realm
 end
 
 -- Normalizes the name LibKeystone hands us (Ambiguate(sender, "none")) into our
@@ -160,9 +164,11 @@ local function RecordSelf()
     -- Skip pure non-M+ characters; vault progress alone also qualifies.
     if not level and rating == 0 and weeklyBest == 0 then return end
 
+    local label = CharLabel()
+    if not label then return end  -- realm not yet known; refuse to record a bare-name key
+
     local _, classFile = UnitClass("player")
     ns.db.alts = ns.db.alts or {}
-    local label = CharLabel()
     ns.db.alts[label] = {
         mapID      = mapID,
         level      = level,
@@ -193,7 +199,7 @@ ns.RecordSelf = RecordSelf
 -- Uses a transient wrapper so we never mutate the stored alt records.
 local function GetAltEntries()
     if not ns.db or not ns.db.alts then return {} end
-    local me, list = CharLabel(), {}
+    local me, list = CharLabel() or "", {}
     for charKey, entry in pairs(ns.db.alts) do
         if charKey ~= me then
             list[#list + 1] = { charKey = charKey, entry = entry }
@@ -246,7 +252,9 @@ ns.RefreshPartyRoster = RefreshPartyRoster
 -- here so sections only list other people.
 local function OnKeystoneRecv(level, mapID, rating, playerName, channel)
     local label = NormalizeRecvName(playerName)
-    if not label or label == CharLabel() then return end
+    -- CharLabel() may be nil very early; nil never matches a normalized recv name,
+    -- so we won't accidentally double-record. The "or ''" keeps the comparison sane.
+    if not label or label == (CharLabel() or "") then return end
 
     local hasKey = level and level > 0 and mapID and mapID > 0
     local mapName
@@ -278,8 +286,9 @@ if LKS then LKS.Register(ns, OnKeystoneRecv) end
 
 local function GetPartyEntries()
     local list = {}
+    local me = CharLabel() or ""
     for label, classInfo in pairs(partyRoster) do
-        if label ~= CharLabel() then
+        if label ~= me then
             list[#list + 1] = {
                 charKey   = label,
                 classFile = classInfo.classFile,
@@ -388,7 +397,7 @@ end
 -- Sort:   ns.db.guildSortMode is "smart" | "highest" | "alphabetic".
 local function GetGuildEntries()
     if not ns.db or not ns.db.enableGuild or not ns.db.guildKeys then return {} end
-    local me, list      = CharLabel(), {}
+    local me, list      = CharLabel() or "", {}
     local onlineOnly    = ns.db.guildOnlineOnly
     local partyShown    = (ns.db.showParty ~= false) and (not IsInRaid()) and IsInGroup()
     for charKey, entry in pairs(ns.db.guildKeys) do
@@ -590,7 +599,8 @@ broker.OnEnter = function(self)
     local rating                = GetMyRating()
     local _, weeklyBest         = GetVaultInfo()
     local right, rr, rg, rb     = FormatRow(level, name, rating, weeklyBest, false)
-    Tooltip:AddDoubleLine(CharLabel(), right, CV_r, CV_g, CV_b, rr, rg, rb)
+    Tooltip:AddDoubleLine(CharLabel() or UnitName("player") or "?",
+                          right, CV_r, CV_g, CV_b, rr, rg, rb)
 
     local db = ns.db or {}
 

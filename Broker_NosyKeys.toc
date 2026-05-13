@@ -8,8 +8,8 @@
 ## Category-enUS: Data Broker
 ## SavedVariables: Broker_NosyKeysDB
 
-## X-Curse-Project-ID:
-## X-Wago-ID:
+## X-Curse-Project-ID: 1542362
+## X-Wago-ID: XKqAbwKy
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
