@@ -12,6 +12,8 @@ local defaults = {
     maxGuildEntries     = 15,       -- cap rows in the Guild tooltip section
     guildOnlineOnly     = true,     -- filter to online guildies (most actionable for finding partners)
     guildSortMode       = "smart",  -- "smart" | "highest" | "alphabetic"
+    -- Minimap
+    showMinimapButton   = true,     -- on by default; users who want a clean minimap can opt out
     -- Tooltip sections
     showParty           = true,
     showAlts            = true,
@@ -46,7 +48,11 @@ sf:SetScript("OnEvent", function(self, event, name)
 
     ns.db = db
 
-    -- Register minimap button (LibDBIcon manages show/hide via its own right-click menu).
+    -- The Settings checkbox is authoritative over the icon's visibility — sync it
+    -- into LibDBIcon's persistent hide flag before registering. (LibDBIcon owns the
+    -- db.minimapIcon table for icon position too; we only drive the hide field.)
+    db.minimapIcon.hide = not db.showMinimapButton
+
     local LibDBIcon = LibStub("LibDBIcon-1.0", true)
     if LibDBIcon and ns.broker then
         LibDBIcon:Register("Broker_NosyKeys", ns.broker, db.minimapIcon)
@@ -131,6 +137,27 @@ sf:SetScript("OnEvent", function(self, event, name)
         end,
         "Drop all locally stored guildmate keystone data. New broadcasts from LibKeystone-aware addons (BigWigs, NosyKeys) will repopulate the list within minutes. Safe to use any time.",
         true))  -- addSearchTags: required non-nil in Midnight; true so the row matches "wipe" / "guild" in the settings search
+
+    -- ── Section: Minimap ─────────────────────────────────────────────────────
+    Settings.RegisterInitializer(category,
+        CreateSettingsListSectionHeaderInitializer("Minimap", nil))
+
+    local showMinimapSetting = Settings.RegisterAddOnSetting(
+        category, addonName .. "_showMinimapButton", "showMinimapButton", db,
+        Settings.VarType.Boolean, "Show minimap button", defaults.showMinimapButton)
+    showMinimapSetting:SetValueChangedCallback(function()
+        db.minimapIcon.hide = not db.showMinimapButton
+        local LDBIcon = LibStub("LibDBIcon-1.0", true)
+        if LDBIcon then
+            if db.showMinimapButton then
+                LDBIcon:Show("Broker_NosyKeys")
+            else
+                LDBIcon:Hide("Broker_NosyKeys")
+            end
+        end
+    end)
+    Settings.CreateCheckbox(category, showMinimapSetting,
+        "Show the NosyKeys minimap button. On by default. Most users with a broker bar host (Arcana, ElvUI, Bazooka, etc.) prefer turning this off to keep the minimap edge clear.")
 
     -- ── Section: Tooltip ─────────────────────────────────────────────────────
     Settings.RegisterInitializer(category,

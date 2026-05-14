@@ -1,8 +1,10 @@
 # NosyKeys
 
-**A lean Mythic+ keystone broker. One tooltip shows you, your party, your alts, and your guild — no separate window, no custom comm protocol.** Talks [LibKeystone](https://github.com/BigWigsMods/LibKeystone), so BigWigs guildmates appear automatically.
+**A lean Mythic+ keystone tracker. A single tooltip covers you, your party, your alts, and your guild — no separate window, no custom comm protocol.** Talks [LibKeystone](https://github.com/BigWigsMods/LibKeystone), so BigWigs guildmates appear automatically.
 
-Retail only. Requires Midnight (Interface 120005+) and a broker host such as Arcana (recommended), ElvUI, Bazooka, Broker2FuBar, or TitanPanel.
+**Open the tooltip from your broker bar or from the built-in minimap button** — both are first-class entry points, and either can be toggled off if you only want one. No broker bar host? No problem. Have one already (Arcana, ElvUI, Bazooka, TitanPanel...)? Drop the minimap icon and use the bar entry instead.
+
+Retail only. Requires Midnight (Interface 120005+); a broker bar host is optional.
 
 ## Is this for you?
 
@@ -11,7 +13,7 @@ Retail only. Requires Midnight (Interface 120005+) and a broker host such as Arc
 - Run Mythic+ on multiple characters and want to see all their keys in one place
 - Want to know who in your party has what key without asking
 - Already use BigWigs (LibKeystone interop is free; nothing to configure)
-- Prefer broker bars and hover-tooltips over dedicated windows
+- Prefer a hover-tooltip over a dedicated window — whether you reach it via a broker bar or the minimap is up to you
 
 **Probably not** — if you:
 
@@ -33,6 +35,7 @@ Retail only. Requires Midnight (Interface 120005+) and a broker host such as Arc
 - **Privacy**: per-channel guild-hide (broadcast "no key" to guildmates while keeping party broadcasts intact)
 - **Click handlers**: open the keystone holder · Shift-Click to insert your keystone hyperlink into chat · Shift-RightClick to open settings
 - **Weekly reset aware**: guild data wipes on rollover; alts persist with stale-fade after a week unseen
+- **Optional minimap button**: on by default, one-toggle off in settings for those keeping the minimap edge clear
 - **Native Settings panel**: all options in WoW's built-in AddOns settings (Escape → Options → AddOns → NosyKeys)
 
 ## Installation
@@ -49,7 +52,7 @@ For manual installation:
 
 ## Click Interactions
 
-All interactions are on the broker bar button:
+Interactions work identically on the broker bar entry and the minimap button — whichever you keep visible:
 
 - **Left-click** — Open the keystone holder (lazy-loads `Blizzard_ChallengesUI` if needed)
 - **Shift-Left-click** — Insert your keystone hyperlink into the active chat box (plain-text fallback if the bag scan can't find it)
@@ -71,6 +74,10 @@ Open the settings panel via **Shift-Right-click** on the broker button, or via *
   - *Highest first* — by key level descending, then by rating.
   - *Alphabetic by name* — by `Name-Realm`.
 - **Stored guild data — Wipe** — One-click escape hatch that drops every locally stored guildmate entry. New broadcasts repopulate the list within minutes, so this is safe to use any time. The standard weekly-reset wipe still runs automatically.
+
+### Minimap
+
+- **Show minimap button** *(default: On)* — Show the NosyKeys minimap button. Most users with a broker bar host (Arcana, ElvUI, Bazooka, etc.) prefer turning this off to keep the minimap edge clear.
 
 ### Tooltip
 
@@ -106,7 +113,7 @@ Open the settings panel via **Shift-Right-click** on the broker button, or via *
 
 - **WoW Version**: Retail (Midnight, Interface 120005+)
 - **Dependencies**: LibStub, CallbackHandler-1.0, LibDataBroker-1.1, LibDBIcon-1.0, LibKeystone (all bundled)
-- **Broker display**: any LDB-compatible display (ElvUI, Bazooka, Broker2FuBar, TitanPanel, etc.)
+- **Broker display**: **optional** — any LDB-compatible host works (Arcana, ElvUI, Bazooka, Broker2FuBar, TitanPanel, etc.). If you don't run one, the built-in minimap button is a full-equivalent entry point on its own.
 
 ## Contributing
 
@@ -118,48 +125,49 @@ Licensed under [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html). The full li
 
 ## Changelog
 
+### v1.1.0
+
+- Minimap button is now configurable via *Settings → Minimap*. On by default; toggle off to declutter your minimap edge.
+- README clarifies that NosyKeys works without a broker bar — the minimap button is a full-equivalent entry point.
+
 ### v1.0.0
 
 First stable release.
 
-- **Alt-hold reveal**: hold Alt while hovering the broker to temporarily show all stored guild keys, bypassing both the *Online guildmates only* filter and the *Show guild keys* toggle. Tooltip header reads `Guild  (online only)` while the filter is active, and includes a hint line describing the Alt action.
-- **Settings**: one-click *Wipe* button for stored guild data, in case you want a clean slate sooner than weekly reset.
-- **Behavior**: guild broadcasts are now stored on receipt regardless of the *Show guild keys* toggle, so Alt-hold reveal has data available even when the section is hidden by default. Storage is still wiped on weekly reset.
+- **Alt-hold reveal**: hold Alt while the tooltip is open to temporarily show all stored guild keys, bypassing the *Online guildmates only* filter and the *Show guild keys* toggle. Cap still applies. A tooltip hint surfaces the feature when it would do something.
+- **Header annotation**: the Guild section reads `Guild  (online only)` when the filter is active, so it's clear why offline guildmates are missing.
+- **Wipe button**: one-click escape hatch in *Settings → Guild* to drop all stored guildmate keys. Safe to use any time — new broadcasts repopulate the list within minutes.
 
 ### v0.9.3-beta
 
-End-to-end publishing pipeline verification. No source changes from v0.9.2-beta — first release uploaded to GitHub Releases, CurseForge, and Wago.io in a single packager run.
+Pipeline verification — first release published to CurseForge and Wago alongside GitHub. No source changes.
 
 ### v0.9.2-beta
 
-Bug fixes and publishing wiring.
-
-- Fix duplicate alt rows when realm wasn't ready at early addon-load (bare `Name` row alongside `Name-Realm`). One-time SavedVariables migration drops legacy bare-name keys.
+- Fix duplicate alt rows when realm wasn't ready during early addon-load (one-time SavedVariables migration drops any legacy bare-name keys).
 - Contain WoW 12.x keystone-API taint into a private tooltip frame so the shared `GameTooltip` stays clean.
-- Wire CurseForge and Wago project IDs for automatic packager uploads.
 
 ### v0.9.1-beta
 
 Polish from first in-game test.
 
-- Dev-build footer (no more literal `@project-version@`)
-- Guild dedup against Party
-- Deterministic smart-sort tiebreaker
-- Guild visibility default flipped on
+- Dev-build footer (no more literal `@project-version@` showing in raw source checkouts).
+- Guild rows deduplicate against the Party section.
+- Deterministic smart-sort tiebreaker (rating).
+- Guild visibility default flipped on.
 
 ### v0.9.0-beta
 
 Initial public beta.
 
-- Broker bar: current keystone (`<Dungeon> +<Level>`) or `no key`
-- Tooltip: *You*, *Party*, *Alts*, *Guild* sections with class-colored names, key-tier-colored levels, weekly vault progress (`vault +<N>`), and current-season rating
-- LibKeystone-powered party and guild comm — interoperates with BigWigs and any other LibKeystone-aware addon
-- Guild section is on by default (toggle to opt out), persists across `/reload`, wipes on weekly reset
-- Party members are deduplicated from the Guild section so a guildmate currently in your party doesn't appear twice
-- Guild filtering: online-only by default to surface guildmates you can actually whisper now
-- Guild sorting: Smart (near my key level), Highest first, or Alphabetic — Smart by default so a +10 player isn't drowned in +20 pushers
-- Per-channel guild hide (privacy: broadcast "no key" to guildmates only)
-- Per-character alt snapshots in SavedVariables, stale-faded after a week unseen
-- Click handlers: open keystone holder, insert keystone hyperlink into chat, open settings
-- Native WoW Settings panel
-- Publishing pipeline: CurseForge and Wago.io automated via BigWigsMods packager on tag push
+- Broker bar: current keystone (`<Dungeon> +<Level>`) or `no key`.
+- Tooltip: *You*, *Party*, *Alts*, *Guild* sections with class-colored names, key-tier-colored levels, weekly vault progress (`vault +<N>`), and current-season rating.
+- LibKeystone-powered party and guild comm — interoperates with BigWigs and any other LibKeystone-aware addon.
+- Guild section persists across `/reload`, wipes on weekly reset.
+- Party members are deduplicated from Guild so a guildmate currently in your party doesn't appear twice.
+- Guild filter: online-only by default; configurable cap (Top 10 / 15 / 25 / 50 / All).
+- Guild sort: *Smart* (near my key level), *Highest first*, or *Alphabetic*.
+- Per-channel guild hide (privacy: broadcast "no key" to guildmates only).
+- Per-character alt snapshots in SavedVariables, stale-faded after a week unseen.
+- Click handlers: open keystone holder, insert keystone hyperlink into chat, open settings.
+- Native WoW Settings panel.
