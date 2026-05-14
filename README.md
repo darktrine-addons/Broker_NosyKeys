@@ -23,15 +23,17 @@ Retail only. Requires Midnight (Interface 120005+) and a broker host such as Arc
 ## Features
 
 - **Broker bar text**: `<DungeonName>  +<Level>` for your current key, or `no key`
-- **Tooltip sections**: *You*, *Party* (in a 5-man), *Alts* (other characters on your account), *Guild* (opt-in)
+- **Tooltip sections**: *You*, *Party* (in a 5-man), *Alts* (other characters on your account), *Guild*
 - **Vault progress**: each row appends `vault +<N>` when the character has weekly M+ progress, alongside current key and seasonal rating
 - **LibKeystone-powered comm**: party and guild keys arrive automatically from any LibKeystone-aware addon (BigWigs, other NosyKeys installs)
 - **Class-colored names**, **key-tier-colored levels** (green / blue / purple / orange / pink mirroring Blizzard's keystone item-quality), and **stale-fade** for alts not seen this week
 - **Smart guild sort** *(default)*: prioritizes guildmates whose key level is closest to yours — so the people you could actually run with surface first, not the +20 pushers at the top of a fixed-cap list
-- **Online-first filtering**: by default the Guild section lists only guildmates currently online; toggle off to see everyone whose key arrived this week
+- **Online-first filtering**: by default the Guild section lists only guildmates currently online; the header reads `Guild  (online only)` while the filter is active
+- **Alt-hold reveal**: hold the **Alt** key while the tooltip is open to temporarily bypass the online-only filter and the *Show guild keys* toggle — see everyone whose key has been broadcast this week without flipping a setting. Cap still applies.
 - **Privacy**: per-channel guild-hide (broadcast "no key" to guildmates while keeping party broadcasts intact)
 - **Click handlers**: open the keystone holder · Shift-Click to insert your keystone hyperlink into chat · Shift-RightClick to open settings
 - **Weekly reset aware**: guild data wipes on rollover; alts persist with stale-fade after a week unseen
+- **Native Settings panel**: all options in WoW's built-in AddOns settings (Escape → Options → AddOns → NosyKeys)
 
 ## Installation
 
@@ -47,9 +49,12 @@ For manual installation:
 
 ## Click Interactions
 
+All interactions are on the broker bar button:
+
 - **Left-click** — Open the keystone holder (lazy-loads `Blizzard_ChallengesUI` if needed)
 - **Shift-Left-click** — Insert your keystone hyperlink into the active chat box (plain-text fallback if the bag scan can't find it)
 - **Shift-Right-click** — Open the Settings panel
+- **Hold Alt while tooltip is open** — Temporarily reveal all stored guild keys (bypasses the *Online guildmates only* filter and the *Show guild keys* toggle for the duration of the hold)
 
 ## Configuration
 
@@ -65,6 +70,7 @@ Open the settings panel via **Shift-Right-click** on the broker button, or via *
   - *Smart (near my key level)* — distance-from-your-key-level ascending; uses your weekly best as the reference when you have no current key. Degrades to *Highest first* when neither is known.
   - *Highest first* — by key level descending, then by rating.
   - *Alphabetic by name* — by `Name-Realm`.
+- **Stored guild data — Wipe** — One-click escape hatch that drops every locally stored guildmate entry. New broadcasts repopulate the list within minutes, so this is safe to use any time. The standard weekly-reset wipe still runs automatically.
 
 ### Tooltip
 
@@ -111,6 +117,14 @@ Issues and pull requests are welcome.
 Licensed under [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html). The full license text is in the `LICENSE` file in the source distribution.
 
 ## Changelog
+
+### v1.0.0
+
+First stable release.
+
+- **Alt-hold reveal**: hold Alt while hovering the broker to temporarily show all stored guild keys, bypassing both the *Online guildmates only* filter and the *Show guild keys* toggle. Tooltip header reads `Guild  (online only)` while the filter is active, and includes a hint line describing the Alt action.
+- **Settings**: one-click *Wipe* button for stored guild data, in case you want a clean slate sooner than weekly reset.
+- **Behavior**: guild broadcasts are now stored on receipt regardless of the *Show guild keys* toggle, so Alt-hold reveal has data available even when the section is hidden by default. Storage is still wiped on weekly reset.
 
 ### v0.9.3-beta
 

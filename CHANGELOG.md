@@ -1,5 +1,16 @@
 # NosyKeys
 
+## v1.0.0 (2026-05-13)
+
+First stable release.
+
+- **Alt-hold reveal**: hold the Alt key while the broker tooltip is open to temporarily bypass both the *Online guildmates only* filter and the *Show guild keys* toggle. Cap still applies. A tooltip hint surfaces the feature contextually.
+- **Header annotation**: the Guild section now reads `Guild  (online only)` when the filter is active, so users understand why offline guildmates are missing.
+- **Stored guild data — Wipe** button in Settings as a one-click escape hatch. New broadcasts repopulate the list within minutes; the standard weekly-reset wipe still runs.
+- **Behavior**: guild broadcasts are now stored on receipt regardless of the *Show guild keys* toggle, so the Alt-hold reveal has data available even when the section is hidden by default. Storage is still wiped on weekly reset.
+- **Fix**: outer `enableGuild` gate in the tooltip render was suppressing the Alt-hold reveal when the toggle was off; the visibility decision is now consolidated inside `GetGuildEntries`.
+- **Fix**: `CreateSettingsButtonInitializer` now requires a non-nil `addSearchTags` argument in Midnight 12.x; passing `true` so the wipe row is findable via Blizzard's settings search.
+
 ## v0.9.3-beta (2026-05-13)
 
 End-to-end publishing pipeline verification. No source changes from v0.9.2-beta — first tag with CurseForge and Wago.io API tokens wired into repo secrets, so the BigWigs packager uploads to all three platforms (GitHub Releases + CurseForge + Wago.io) in a single workflow run.

@@ -38,6 +38,14 @@ local Tooltip = CreateFrame("GameTooltip",
                             UIParent,
                             "GameTooltipTemplate")
 
+-- Alt-hold reveal state: when true, guild visibility ignores both the
+-- "Show guild keys" toggle and the "Online guildmates only" filter. Updated by a
+-- MODIFIER_STATE_CHANGED listener defined alongside the tooltip builder.
+-- lastAnchor caches the broker frame so we can rebuild the tooltip in place
+-- when the modifier flips while the user is still hovering.
+local altHeld    = false
+local lastAnchor = nil
+
 -- ── tooltip colors ────────────────────────────────────────────────────────────
 -- teal for static labels, white for dynamic values, orange for interaction hints,
 -- grey for section headers and "no key" placeholders.
@@ -271,9 +279,10 @@ local function OnKeystoneRecv(level, mapID, rating, playerName, channel)
     if channel == "PARTY" then
         partyKeys[label] = snapshot
     elseif channel == "GUILD" then
-        -- Persist guild data in SavedVariables so it survives /reload (keys are valid
-        -- across the whole week). The weekly-reset hook wipes the table.
-        if ns.db and ns.db.enableGuild then
+        -- Always store guild broadcasts in SavedVariables (survives /reload; weekly-
+        -- reset hook wipes). Display is gated separately at render time so the
+        -- Alt-hold reveal has something to show even when "Show guild keys" is off.
+        if ns.db then
             snapshot.lastSeen     = time()
             ns.db.guildKeys       = ns.db.guildKeys or {}
             ns.db.guildKeys[label] = snapshot
@@ -355,16 +364,16 @@ end
 ns.ApplyGuildHidden = ApplyGuildHidden
 
 -- Called when the user toggles "Show guild keys" or on guild join. When the setting
--- is on and we're in a guild, request a fresh broadcast. When the setting is off,
--- drop the stored data so nothing lingers.
+-- is on and we're in a guild, proactively pull fresh broadcasts. When it's off we
+-- still receive passive broadcasts (other clients auto-broadcast on key change), but
+-- we don't actively Request — the stored data is kept around so Alt-hold reveal can
+-- surface it on demand. Weekly-reset still wipes.
 local function RefreshGuild()
     if not ns.db then return end
     if ns.db.enableGuild and IsInGuild() then
         RequestGuildRoster()
         RebuildGuildLookups()  -- use whatever roster data we already have
         if LKS then LKS.Request("GUILD") end
-    elseif not ns.db.enableGuild and ns.db.guildKeys then
-        wipe(ns.db.guildKeys)
     end
 end
 ns.RefreshGuild = RefreshGuild
@@ -395,10 +404,14 @@ end
 --         party members are also dropped to avoid duplicating their row from the
 --         Party section (skipped when Party is hidden, so no data is lost).
 -- Sort:   ns.db.guildSortMode is "smart" | "highest" | "alphabetic".
+-- Alt-hold: when altHeld is true, both gates are bypassed — Show guild keys becomes
+--         "show even if disabled", and online-only becomes "include offline". The
+--         cap still applies so we don't blow up the tooltip with 500 rows.
 local function GetGuildEntries()
-    if not ns.db or not ns.db.enableGuild or not ns.db.guildKeys then return {} end
+    if not ns.db or not ns.db.guildKeys then return {} end
+    if not (ns.db.enableGuild or altHeld) then return {} end
     local me, list      = CharLabel() or "", {}
-    local onlineOnly    = ns.db.guildOnlineOnly
+    local onlineOnly    = ns.db.guildOnlineOnly and not altHeld
     local partyShown    = (ns.db.showParty ~= false) and (not IsInRaid()) and IsInGroup()
     for charKey, entry in pairs(ns.db.guildKeys) do
         if charKey ~= me and not (partyShown and partyRoster[charKey]) then
@@ -579,7 +592,25 @@ local function FormatRow(level, mapName, rating, weeklyBest, dim)
     return s, rr, rg, rb
 end
 
-broker.OnEnter = function(self)
+-- Returns hint text describing what Alt-hold would do, or nil if it'd be a no-op.
+-- Caller decides whether to render it as a tooltip line. The hint is suppressed
+-- once Alt is already held — no need to advertise a feature the user is using.
+local function AltRevealHint()
+    if altHeld then return nil end
+    local db = ns.db or {}
+    if not db.enableGuild then        return "Hold Alt",  "show guild keys"                end
+    if db.guildOnlineOnly then        return "Hold Alt",  "include offline guildmates"     end
+    return nil
+end
+
+-- Builds the tooltip contents against the given anchor frame. Called from
+-- broker.OnEnter and from the MODIFIER_STATE_CHANGED listener to re-render in
+-- place when Alt is pressed/released during a hover.
+local function BuildTooltip(self)
+    if not self then return end
+    -- Resync the modifier in case the event listener missed the initial state
+    -- (e.g. user /reload'd while already holding Alt — no state-change event fires).
+    altHeld = IsAltKeyDown() and true or false
     -- Anchor below the bar when in the top half, above when in the bottom half.
     local _, frameY = self:GetCenter()
     Tooltip:SetOwner(self, "ANCHOR_NONE")
@@ -645,17 +676,24 @@ broker.OnEnter = function(self)
     end
 
     -- ── Guild ────────────────────────────────────────────────────────────────
-    if db.enableGuild then
-        local guild = GetGuildEntries()
-        if #guild > 0 then
-            Tooltip:AddLine(" ")
-            Tooltip:AddLine("Guild", CS_r, CS_g, CS_b)
-            for _, item in ipairs(guild) do
-                local nr, ng, nb = ClassColor(item.classFile)
-                local e = item.entry
-                local right, rr, rg, rb = FormatRow(e.level, e.mapName, e.rating, nil, false)
-                Tooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
-            end
+    -- GetGuildEntries returns {} when neither enableGuild nor altHeld is set, so
+    -- the #guild > 0 check is the sole visibility gate — no need to re-check
+    -- enableGuild here, which would otherwise suppress the Alt-hold reveal when
+    -- the user has the setting turned off.
+    local guild = GetGuildEntries()
+    if #guild > 0 then
+        Tooltip:AddLine(" ")
+        -- Annotate the header so the user knows why offline guildmates are missing.
+        -- Suppress the suffix when Alt-hold has bypassed the filter — the section
+        -- is currently showing everyone, the label shouldn't claim otherwise.
+        local header = "Guild"
+        if db.guildOnlineOnly and not altHeld then header = header .. "  (online only)" end
+        Tooltip:AddLine(header, CS_r, CS_g, CS_b)
+        for _, item in ipairs(guild) do
+            local nr, ng, nb = ClassColor(item.classFile)
+            local e = item.entry
+            local right, rr, rg, rb = FormatRow(e.level, e.mapName, e.rating, nil, false)
+            Tooltip:AddDoubleLine(item.charKey, right, nr, ng, nb, rr, rg, rb)
         end
     end
 
@@ -664,6 +702,10 @@ broker.OnEnter = function(self)
     Tooltip:AddDoubleLine("Click",            "open the keystone holder", CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
     Tooltip:AddDoubleLine("Shift-Click",      "link your key to chat",    CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
     Tooltip:AddDoubleLine("Shift-RightClick", "open settings",            CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
+    local hintKey, hintDesc = AltRevealHint()
+    if hintKey then
+        Tooltip:AddDoubleLine(hintKey, hintDesc, CH_r, CH_g, CH_b, CV_r, CV_g, CV_b)
+    end
 
     -- ── Footer: addon name + version, right-aligned, faint grey ──────────────
     Tooltip:AddLine(" ")
@@ -671,6 +713,24 @@ broker.OnEnter = function(self)
 
     Tooltip:Show()
 end
+
+broker.OnEnter = function(self)
+    lastAnchor = self
+    BuildTooltip(self)
+end
+
+-- Re-render the tooltip in place when Alt is pressed or released during a hover.
+-- We listen to all modifier changes (cheap) and only act when the consolidated
+-- IsAltKeyDown() state actually flips, which prevents redundant rebuilds.
+local mf = CreateFrame("Frame")
+mf:RegisterEvent("MODIFIER_STATE_CHANGED")
+mf:SetScript("OnEvent", function(_, _, key)
+    if key ~= "LALT" and key ~= "RALT" then return end
+    local newState = IsAltKeyDown() and true or false
+    if newState == altHeld then return end
+    altHeld = newState
+    if Tooltip:IsShown() and lastAnchor then BuildTooltip(lastAnchor) end
+end)
 
 broker.OnLeave = function(self)
     Tooltip:Hide()

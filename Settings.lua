@@ -113,6 +113,25 @@ sf:SetScript("OnEvent", function(self, event, name)
         return c:GetData()
     end, "How to order the Guild list before the cap is applied. \"Smart\" sorts by closeness to your own key level (or weekly best when you have no key), so the people you could actually run with surface first.")
 
+    -- Escape hatch: wipe the locally stored guild data. New broadcasts repopulate
+    -- the list automatically, so this is safe to use any time. Bypasses the
+    -- weekly-reset rhythm for users who want a clean slate sooner.
+    Settings.RegisterInitializer(category, CreateSettingsButtonInitializer(
+        "Stored guild data",
+        "Wipe",
+        function()
+            local guildKeys = Broker_NosyKeysDB and Broker_NosyKeysDB.guildKeys
+            if not guildKeys then return end
+            local n = 0
+            for _ in pairs(guildKeys) do n = n + 1 end
+            wipe(guildKeys)
+            DEFAULT_CHAT_FRAME:AddMessage(
+                ("|cffaaaaff[NosyKeys]|r cleared %d stored guild keystone entr%s.")
+                :format(n, n == 1 and "y" or "ies"))
+        end,
+        "Drop all locally stored guildmate keystone data. New broadcasts from LibKeystone-aware addons (BigWigs, NosyKeys) will repopulate the list within minutes. Safe to use any time.",
+        true))  -- addSearchTags: required non-nil in Midnight; true so the row matches "wipe" / "guild" in the settings search
+
     -- ── Section: Tooltip ─────────────────────────────────────────────────────
     Settings.RegisterInitializer(category,
         CreateSettingsListSectionHeaderInitializer("Tooltip", nil))
