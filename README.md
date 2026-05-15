@@ -55,7 +55,7 @@ For manual installation:
 Interactions work identically on the broker bar entry and the minimap button — whichever you keep visible:
 
 - **Left-click** — Open the keystone holder (lazy-loads `Blizzard_ChallengesUI` if needed)
-- **Shift-Left-click** — Insert your keystone hyperlink into the active chat box (plain-text fallback if the bag scan can't find it)
+- **Shift-Left-click** — Insert your keystone hyperlink into chat. Opens the chat box if it's closed, using the last channel you typed in; preserves any text you've already typed. Plain-text fallback if the bag scan can't find your keystone item.
 - **Shift-Right-click** — Open the Settings panel
 - **Hold Alt while tooltip is open** — Temporarily reveal all stored guild keys (bypasses the *Online guildmates only* filter and the *Show guild keys* toggle for the duration of the hold)
 

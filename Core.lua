@@ -740,10 +740,26 @@ end
 
 local function LinkKeyToChat()
     local _, level, name = GetOwnedKey()
-    if not level then return end
+    if not level then
+        -- Silent no-op looks like a broken click handler. Brief chat feedback
+        -- tells the user the shift-click registered but had nothing to insert.
+        DEFAULT_CHAT_FRAME:AddMessage(
+            "|cffaaaaff[NosyKeys]|r No keystone to link — run a Mythic+ to get one.")
+        return
+    end
     local link = GetOwnedKeystoneLink()
+    -- Mirrors the Enter-key binding: ChatEdit_ChooseBoxForSend returns the
+    -- last-used editbox (preserves channel), ChatEdit_ActivateChat opens it if
+    -- closed. The :Insert call is non-destructive — preserves any text already
+    -- typed and inserts at cursor. All public Blizzard APIs, no taint risk.
     local editBox = ChatEdit_ChooseBoxForSend()
     ChatEdit_ActivateChat(editBox)
+    -- Defensive: chat-styling addons (e.g. Prat-3.0 on Midnight 12.x) can leave
+    -- the editbox hidden or transparent after Blizzard's Activate flow. Costs
+    -- two no-ops when no such addon is present, but unblocks the feature for
+    -- users who have one. Doesn't affect taint either way.
+    if not editBox:IsShown() then editBox:Show() end
+    editBox:SetAlpha(1)
     -- Hyperlink renders as a clickable keystone item in chat; plain-text fallback
     -- keeps the feature working even if the bag scan fails (PTR/beta or Timerunning oddities).
     editBox:Insert(link or (name .. " +" .. level))
