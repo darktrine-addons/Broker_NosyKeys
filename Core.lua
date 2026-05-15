@@ -709,7 +709,7 @@ local function BuildTooltip(self)
 
     -- ── Footer: addon name + version, right-aligned, faint grey ──────────────
     Tooltip:AddLine(" ")
-    Tooltip:AddDoubleLine("", "NosyKeys  v" .. addonVersion, 0, 0, 0, 0.45, 0.45, 0.45)
+    Tooltip:AddDoubleLine("", "NosyKeys " .. addonVersion, 0, 0, 0, 0.45, 0.45, 0.45)
 
     Tooltip:Show()
 end
