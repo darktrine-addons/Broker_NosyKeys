@@ -630,8 +630,11 @@ local function BuildTooltip(self)
     local rating                = GetMyRating()
     local _, weeklyBest         = GetVaultInfo()
     local right, rr, rg, rb     = FormatRow(level, name, rating, weeklyBest, false)
+    -- Match the colouring of Party / Alts / Guild rows: name in class color.
+    local _, classFile          = UnitClass("player")
+    local nr, ng, nb            = ClassColor(classFile)
     Tooltip:AddDoubleLine(CharLabel() or UnitName("player") or "?",
-                          right, CV_r, CV_g, CV_b, rr, rg, rb)
+                          right, nr, ng, nb, rr, rg, rb)
 
     local db = ns.db or {}
 
