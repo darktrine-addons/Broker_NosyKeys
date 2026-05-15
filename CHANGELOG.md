@@ -1,5 +1,12 @@
 # NosyKeys
 
+## v1.1.1 (2026-05-15)
+
+- Shift-click on a character with no keystone now prints a brief chat message instead of silently doing nothing.
+- Defensive editbox-show after `ChatEdit_ActivateChat` so shift-click-to-chat works when Prat-3.0 is loaded on Midnight 12.x. Filed upstream at [prat-3-0#315](https://github.com/Legacy-of-Sylvanaar/prat-3-0/issues/315).
+- "You" row in the tooltip is now class-colored, matching the Party / Alts / Guild rows.
+- Tooltip footer: removed a duplicate `v` in the version string.
+
 ## v1.1.0 (2026-05-14)
 
 - Minimap button is now configurable via *Settings → Minimap*. On by default; toggle off to declutter your minimap edge.
