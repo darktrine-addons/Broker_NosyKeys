@@ -46,6 +46,21 @@ local Tooltip = CreateFrame("GameTooltip",
 local altHeld    = false
 local lastAnchor = nil
 
+-- Max-level filtering: keep sub-max characters out of the Party / Alts / Guild
+-- lists, since they can't run M+ anyway. Sourced from the Blizzard API; the
+-- fallback constant is the maintenance touch point for future expansions —
+-- bump it when GetMaxPlayerLevel is missing or returns a clearly-wrong value.
+local MAX_LEVEL_FALLBACK = 90  -- Midnight
+local MAX_LEVEL = (GetMaxPlayerLevel and GetMaxPlayerLevel()) or MAX_LEVEL_FALLBACK
+if not MAX_LEVEL or MAX_LEVEL < 60 then MAX_LEVEL = MAX_LEVEL_FALLBACK end
+
+-- True only when we can prove the level is sub-max. Unknown level (nil, 0, -1
+-- for out-of-range party friends, legacy snapshots) is treated as "could be max" —
+-- we'd rather show a possibly-max char than hide a definitely-max one.
+local function IsKnownSubMax(lvl)
+    return lvl and lvl >= 1 and lvl < MAX_LEVEL
+end
+
 -- ── tooltip colors ────────────────────────────────────────────────────────────
 -- teal for static labels, white for dynamic values, orange for interaction hints,
 -- grey for section headers and "no key" placeholders.
@@ -185,6 +200,7 @@ local function RecordSelf()
         weeklyRuns = weeklyRuns,
         weeklyBest = weeklyBest,
         classFile  = classFile,
+        charLevel  = UnitLevel("player"),  -- snapshot for max-level filtering
         lastSeen   = time(),
     }
 
@@ -209,7 +225,7 @@ local function GetAltEntries()
     if not ns.db or not ns.db.alts then return {} end
     local me, list = CharLabel() or "", {}
     for charKey, entry in pairs(ns.db.alts) do
-        if charKey ~= me then
+        if charKey ~= me and not IsKnownSubMax(entry.charLevel) then
             list[#list + 1] = { charKey = charKey, entry = entry }
         end
     end
@@ -228,7 +244,7 @@ ns.GetAltEntries = GetAltEntries
 -- tokens on roster updates and supplies class colors plus the "still in party" filter.
 
 local partyKeys   = {}  -- Name-Realm → { level, mapID, mapName, rating }
-local partyRoster = {}  -- Name-Realm → { classFile }
+local partyRoster = {}  -- Name-Realm → { classFile, charLevel }
 
 local function RefreshPartyRoster()
     wipe(partyRoster)
@@ -244,7 +260,10 @@ local function RefreshPartyRoster()
             local label = UnitLabel(unit)
             local _, classFile = UnitClass(unit)
             if label then
-                partyRoster[label] = { classFile = classFile }
+                partyRoster[label] = {
+                    classFile = classFile,
+                    charLevel = UnitLevel(unit),
+                }
             end
         end
     end
@@ -297,7 +316,7 @@ local function GetPartyEntries()
     local list = {}
     local me = CharLabel() or ""
     for label, classInfo in pairs(partyRoster) do
-        if label ~= me then
+        if label ~= me and not IsKnownSubMax(classInfo.charLevel) then
             list[#list + 1] = {
                 charKey   = label,
                 classFile = classInfo.classFile,
@@ -324,6 +343,7 @@ ns.GetPartyEntries = GetPartyEntries
 
 local guildClass  = {}  -- baseName (pre-dash) → classFile
 local guildOnline = {}  -- baseName → true when currently online
+local guildLevels = {}  -- baseName → character level (for max-level filtering)
 
 -- Asks the server for a guild roster refresh. Results arrive asynchronously and
 -- trigger GUILD_ROSTER_UPDATE, which is where we rebuild the local lookups.
@@ -340,14 +360,16 @@ end
 local function RebuildGuildLookups()
     wipe(guildClass)
     wipe(guildOnline)
+    wipe(guildLevels)
     if not IsInGuild() then return end
     local n = GetNumGuildMembers() or 0
     for i = 1, n do
-        local fullName, _, _, _, _, _, _, _, online, _, classFile = GetGuildRosterInfo(i)
+        local fullName, _, _, lvl, _, _, _, _, online, _, classFile = GetGuildRosterInfo(i)
         if fullName then
             local baseName = fullName:match("^([^-]+)") or fullName
             guildClass[baseName]  = classFile
             guildOnline[baseName] = online and true or false
+            guildLevels[baseName] = lvl
         end
     end
 end
@@ -416,7 +438,8 @@ local function GetGuildEntries()
     for charKey, entry in pairs(ns.db.guildKeys) do
         if charKey ~= me and not (partyShown and partyRoster[charKey]) then
             local baseName = charKey:match("^([^-]+)") or charKey
-            if not onlineOnly or guildOnline[baseName] then
+            if not IsKnownSubMax(guildLevels[baseName])
+               and (not onlineOnly or guildOnline[baseName]) then
                 list[#list + 1] = {
                     charKey   = charKey,
                     classFile = guildClass[baseName],
