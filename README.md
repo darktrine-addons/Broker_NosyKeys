@@ -125,6 +125,11 @@ Licensed under [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html). The full li
 
 ## Changelog
 
+### v1.1.2
+
+- Sub-max-level characters are now hidden from the Party / Alts / Guild lists. Max level is sourced from `GetMaxPlayerLevel()` with a hardcoded fallback constant (currently 90 for Midnight) as the single touch-point for future expansions.
+- The `vault +N` segment in the tooltip now renders in teal instead of inheriting the key-tier color. Stops vault and key from blurring into the same hue when their levels happen to fall in the same tier.
+
 ### v1.1.1
 
 - Shift-click on a character with no keystone now prints a brief chat message instead of silently doing nothing.
