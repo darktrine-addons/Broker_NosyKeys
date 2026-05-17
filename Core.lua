@@ -606,7 +606,17 @@ local function FormatRow(level, mapName, rating, weeklyBest, dim)
         rr, rg, rb = CS_r, CS_g, CS_b
     end
     if weeklyBest and weeklyBest > 0 then
-        s = s .. "    vault +" .. weeklyBest
+        -- Inline color so the vault segment reads as its own visual element,
+        -- distinct from the key-tier color (which can collide — e.g. +5 key
+        -- and a +5 vault would both be blue without this). Teal echoes our
+        -- label colour and is visually distinct from every key tier.
+        local vr, vg, vb = CL_r, CL_g, CL_b
+        if dim then vr, vg, vb = Fade(vr, vg, vb) end
+        s = s .. ("    |cff%02x%02x%02xvault +%d|r"):format(
+            math.floor(vr * 255 + 0.5),
+            math.floor(vg * 255 + 0.5),
+            math.floor(vb * 255 + 0.5),
+            weeklyBest)
     end
     if rating and rating > 0 then
         s = s .. "    " .. rating
