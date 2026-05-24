@@ -302,9 +302,18 @@ local function OnKeystoneRecv(level, mapID, rating, playerName, channel)
         -- reset hook wipes). Display is gated separately at render time so the
         -- Alt-hold reveal has something to show even when "Show guild keys" is off.
         if ns.db then
+            -- Canonicalize against the guild roster: when a guildmate's broadcast
+            -- sometimes arrives realm-tagged ("Zorrms-Khadgar") and sometimes bare
+            -- ("Zorrms" → "Zorrms-Elune"), they'd be double-stored under both keys.
+            -- The roster is authoritative for full Name-Realm — use it unless the
+            -- baseName is ambiguous (two distinct guildmates share a first name).
+            local baseName = label:match("^([^-]+)") or label
+            local canon = (not guildFullNameAmbig[baseName]) and guildFullName[baseName]
+                          or label
+
             snapshot.lastSeen     = time()
             ns.db.guildKeys       = ns.db.guildKeys or {}
-            ns.db.guildKeys[label] = snapshot
+            ns.db.guildKeys[canon] = snapshot
         end
     end
 end
@@ -341,9 +350,11 @@ ns.GetPartyEntries = GetPartyEntries
 -- entries at render time. Regular guilds are realm-bound, so the bare first-name
 -- segment is a sufficient lookup key.
 
-local guildClass  = {}  -- baseName (pre-dash) → classFile
-local guildOnline = {}  -- baseName → true when currently online
-local guildLevels = {}  -- baseName → character level (for max-level filtering)
+local guildClass        = {}  -- baseName (pre-dash) → classFile
+local guildOnline       = {}  -- baseName → true when currently online
+local guildLevels       = {}  -- baseName → character level (for max-level filtering)
+local guildFullName     = {}  -- baseName → canonical "Name-NormalizedRealm" (roster-derived)
+local guildFullNameAmbig = {} -- baseName → true when two distinct guildmates share this first name
 
 -- Asks the server for a guild roster refresh. Results arrive asynchronously and
 -- trigger GUILD_ROSTER_UPDATE, which is where we rebuild the local lookups.
@@ -353,14 +364,45 @@ local function RequestGuildRoster()
     end
 end
 
--- Rebuilds name → class and name → online lookups from whatever roster data is
--- currently loaded. Kept separate from the request so GUILD_ROSTER_UPDATE doesn't
--- trigger another request in a feedback loop. Online flag comes from position 9
--- of GetGuildRosterInfo.
+-- Connected-realm guilds occasionally see the same player double-stored when one
+-- broadcast arrives with their realm tag ("Zorrms-Khadgar") and another arrives
+-- bare ("Zorrms" → NormalizeRecvName appends our realm → "Zorrms-Elune"). This
+-- rewrites stored entries to their canonical roster name and merges collisions,
+-- keeping the snapshot with the newer lastSeen. Runs after every roster refresh,
+-- so existing duplicates self-clean within seconds of a GUILD_ROSTER_UPDATE.
+local function DedupGuildKeys()
+    if not ns.db or not ns.db.guildKeys then return end
+    local toRename = {}
+    for storedKey, entry in pairs(ns.db.guildKeys) do
+        local baseName = storedKey:match("^([^-]+)") or storedKey
+        local canon = guildFullName[baseName]
+        if canon and canon ~= storedKey and not guildFullNameAmbig[baseName] then
+            toRename[#toRename + 1] = { storedKey, canon, entry }
+        end
+    end
+    for _, t in ipairs(toRename) do
+        local oldKey, newKey, oldEntry = t[1], t[2], t[3]
+        local existing = ns.db.guildKeys[newKey]
+        if existing and (existing.lastSeen or 0) >= (oldEntry.lastSeen or 0) then
+            -- Canonical entry is fresher; just drop the stale alias.
+            ns.db.guildKeys[oldKey] = nil
+        else
+            -- Old (or no) canonical entry; migrate this one over.
+            ns.db.guildKeys[newKey] = oldEntry
+            ns.db.guildKeys[oldKey] = nil
+        end
+    end
+end
+
+-- Rebuilds name → class / online / level / canonical-full-name lookups from
+-- whatever roster data is currently loaded. Kept separate from the request so
+-- GUILD_ROSTER_UPDATE doesn't trigger another request in a feedback loop.
 local function RebuildGuildLookups()
     wipe(guildClass)
     wipe(guildOnline)
     wipe(guildLevels)
+    wipe(guildFullName)
+    wipe(guildFullNameAmbig)
     if not IsInGuild() then return end
     local n = GetNumGuildMembers() or 0
     for i = 1, n do
@@ -370,8 +412,26 @@ local function RebuildGuildLookups()
             guildClass[baseName]  = classFile
             guildOnline[baseName] = online and true or false
             guildLevels[baseName] = lvl
+
+            -- Canonical "Name-NormalizedRealm" — strip spaces from cross-realm
+            -- entries, default to our own realm when the roster omits it.
+            local _, realm = fullName:match("^([^-]+)-(.+)$")
+            local canonRealm = realm and realm:gsub("%s+", "")
+                               or (GetNormalizedRealmName() or "")
+            local canonLabel = baseName .. "-" .. canonRealm
+            if guildFullName[baseName] and guildFullName[baseName] ~= canonLabel then
+                -- Two distinct guildmates share a first name on different realms;
+                -- can't disambiguate by baseName alone, so abandon canonicalization
+                -- for this name and trust the broadcast's own realm tag.
+                guildFullNameAmbig[baseName] = true
+                guildFullName[baseName]      = nil
+            elseif not guildFullNameAmbig[baseName] then
+                guildFullName[baseName] = canonLabel
+            end
         end
     end
+    -- Self-heal any pre-existing duplicate entries now that we know canonical names.
+    DedupGuildKeys()
 end
 ns.RequestGuildRoster  = RequestGuildRoster
 ns.RebuildGuildLookups = RebuildGuildLookups
