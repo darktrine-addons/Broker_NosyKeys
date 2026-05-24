@@ -1,5 +1,9 @@
 # NosyKeys
 
+## v1.1.3 (2026-05-17)
+
+- Connected-realm guilds: same guildmate no longer double-listed under both their real realm and the local realm. When broadcasts arrived sometimes realm-tagged and sometimes bare, the bare ones were appending the local realm and creating a second SavedVariables entry. The guild roster is now treated as authoritative for full Name-Realm; new broadcasts store under the canonical name and pre-existing duplicates self-heal on the next guild-roster update — no `/reload` required.
+
 ## v1.1.2 (2026-05-15)
 
 - Sub-max-level characters are now hidden from the Party / Alts / Guild lists. Max level is sourced from `GetMaxPlayerLevel()` with a hardcoded fallback constant (currently 90 for Midnight) as the single touch-point for future expansions.
