@@ -1,5 +1,9 @@
 # NosyKeys
 
+## v1.1.4 (2026-05-24)
+
+- Hot-fix for v1.1.3: every GUILD keystone broadcast threw `attempt to index global 'guildFullNameAmbig' (a nil value)`. The new lookup tables were declared in the file *after* the function that reads them, so Lua resolved them to nil globals. Forward-declared at the top of the receive path; no behavior change otherwise.
+
 ## v1.1.3 (2026-05-17)
 
 - Connected-realm guilds: same guildmate no longer double-listed under both their real realm and the local realm. When broadcasts arrived sometimes realm-tagged and sometimes bare, the bare ones were appending the local realm and creating a second SavedVariables entry. The guild roster is now treated as authoritative for full Name-Realm; new broadcasts store under the canonical name and pre-existing duplicates self-heal on the next guild-roster update — no `/reload` required.

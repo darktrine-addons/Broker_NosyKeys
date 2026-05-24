@@ -274,6 +274,13 @@ local function RefreshPartyRoster()
 end
 ns.RefreshPartyRoster = RefreshPartyRoster
 
+-- Forward declarations: these guild-roster lookups are defined and populated in
+-- the guild-store section below, but OnKeystoneRecv (just below) needs to read
+-- them on every GUILD broadcast. Lua doesn't hoist `local`, so without these
+-- the references would resolve to nil globals and error on first broadcast.
+local guildFullName     = {}
+local guildFullNameAmbig = {}
+
 -- LibKeystone delivers (level, mapID, rating, name, channel). Self callbacks
 -- arrive too (channel="PARTY" or "GUILD" when we call Request) — filtered out
 -- here so sections only list other people.
@@ -350,11 +357,12 @@ ns.GetPartyEntries = GetPartyEntries
 -- entries at render time. Regular guilds are realm-bound, so the bare first-name
 -- segment is a sufficient lookup key.
 
-local guildClass        = {}  -- baseName (pre-dash) → classFile
-local guildOnline       = {}  -- baseName → true when currently online
-local guildLevels       = {}  -- baseName → character level (for max-level filtering)
-local guildFullName     = {}  -- baseName → canonical "Name-NormalizedRealm" (roster-derived)
-local guildFullNameAmbig = {} -- baseName → true when two distinct guildmates share this first name
+local guildClass  = {}  -- baseName (pre-dash) → classFile
+local guildOnline = {}  -- baseName → true when currently online
+local guildLevels = {}  -- baseName → character level (for max-level filtering)
+-- guildFullName / guildFullNameAmbig are forward-declared above OnKeystoneRecv
+-- so the GUILD-broadcast path can read them. Populated by RebuildGuildLookups
+-- below. (Re-declaring locally here would shadow the upvalue and break that.)
 
 -- Asks the server for a guild roster refresh. Results arrive asynchronously and
 -- trigger GUILD_ROSTER_UPDATE, which is where we rebuild the local lookups.
