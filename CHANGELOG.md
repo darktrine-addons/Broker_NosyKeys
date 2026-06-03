@@ -1,68 +1,66 @@
-# NosyKeys
+# NosyKeys — Changelog
 
-## v1.1.4 (2026-05-24)
+User-facing changes, newest first. Internal and dev-tooling work lives in the
+git history, not here.
 
-- Hot-fix for v1.1.3: every GUILD keystone broadcast threw `attempt to index global 'guildFullNameAmbig' (a nil value)`. The new lookup tables were declared in the file *after* the function that reads them, so Lua resolved them to nil globals. Forward-declared at the top of the receive path; no behavior change otherwise.
+## [v1.1.5](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.5) — 2026-06-03
 
-## v1.1.3 (2026-05-17)
+- chore: release notes are now posted per-version to CurseForge and Wago; the full history lives in this file.
 
-- Connected-realm guilds: same guildmate no longer double-listed under both their real realm and the local realm. When broadcasts arrived sometimes realm-tagged and sometimes bare, the bare ones were appending the local realm and creating a second SavedVariables entry. The guild roster is now treated as authoritative for full Name-Realm; new broadcasts store under the canonical name and pre-existing duplicates self-heal on the next guild-roster update — no `/reload` required.
+## [v1.1.4](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.4) — 2026-05-24
 
-## v1.1.2 (2026-05-15)
+- fix: guild keystone broadcasts no longer throw an error (regression from v1.1.3).
 
-- Sub-max-level characters are now hidden from the Party / Alts / Guild lists. Max level is sourced from `GetMaxPlayerLevel()` with a hardcoded fallback constant (currently 90 for Midnight) as the single touch-point for future expansions.
-- The `vault +N` segment in the tooltip now renders in teal instead of inheriting the key-tier color. Stops vault and key from blurring into the same hue when their levels happen to fall in the same tier.
+## [v1.1.3](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.3) — 2026-05-17
 
-## v1.1.1 (2026-05-15)
+- fix: on connected realms a guildmate is no longer listed twice (once per realm spelling); existing duplicates self-heal on the next roster update — no `/reload` needed.
 
-- Shift-click on a character with no keystone now prints a brief chat message instead of silently doing nothing.
-- Defensive editbox-show after `ChatEdit_ActivateChat` so shift-click-to-chat works when Prat-3.0 is loaded on Midnight 12.x. Filed upstream at [prat-3-0#315](https://github.com/Legacy-of-Sylvanaar/prat-3-0/issues/315).
-- "You" row in the tooltip is now class-colored, matching the Party / Alts / Guild rows.
-- Tooltip footer: removed a duplicate `v` in the version string.
+## [v1.1.2](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.2) — 2026-05-15
 
-## v1.1.0 (2026-05-14)
+- fix: characters below max level are hidden from the Party / Alts / Guild lists.
+- fix: the `vault +N` segment renders in teal so it no longer blends into the key-tier colour.
 
-- Minimap button is now configurable via *Settings → Minimap*. On by default; toggle off to declutter your minimap edge.
-- README clarifies that NosyKeys works without a broker bar — the minimap button is a full-equivalent entry point.
+## [v1.1.1](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.1) — 2026-05-15
 
-## v1.0.0 (2026-05-13)
+- fix: shift-click on a character with no keystone now prints a brief chat message instead of silently doing nothing.
+- fix: shift-click-to-chat works again when Prat-3.0 is loaded on Midnight 12.x.
+- fix: your own *You* row is now class-coloured, matching the Party / Alts / Guild rows.
+- fix: removed a duplicate `v` in the tooltip footer version string.
+
+## [v1.1.0](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.0) — 2026-05-14
+
+- feat: the minimap button is now toggleable in *Settings → Minimap* (on by default) — turn it off if you run a broker bar.
+
+## [v1.0.0](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.0.0) — 2026-05-13
 
 First stable release.
 
-- **Alt-hold reveal**: hold Alt while the tooltip is open to temporarily show all stored guild keys, bypassing the *Online guildmates only* filter and the *Show guild keys* toggle. Cap still applies. A tooltip hint surfaces the feature when it would do something.
-- **Header annotation**: the Guild section reads `Guild  (online only)` when the filter is active, so it's clear why offline guildmates are missing.
-- **Wipe button**: one-click escape hatch in *Settings → Guild* to drop all stored guildmate keys. Safe to use any time — new broadcasts repopulate the list within minutes.
+- feat: **Alt-hold reveal** — hold Alt while the tooltip is open to temporarily show all stored guild keys, bypassing the *Online guildmates only* filter and the *Show guild keys* toggle (cap still applies).
+- feat: the Guild header reads `Guild  (online only)` when the filter is active, so it's clear why offline guildmates are missing.
+- feat: **Wipe** button in *Settings → Guild* drops all stored guildmate keys; broadcasts repopulate within minutes.
 
-## v0.9.3-beta (2026-05-13)
+## [v0.9.3-beta](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v0.9.3-beta) — 2026-05-13
 
-Pipeline verification — first release published to CurseForge and Wago alongside GitHub. No source changes.
+- chore: pipeline verification — first release published to CurseForge and Wago alongside GitHub (no source changes).
 
-## v0.9.2-beta (2026-05-13)
+## [v0.9.2-beta](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v0.9.2-beta) — 2026-05-13
 
-- Fix duplicate alt rows when realm wasn't ready during early addon-load (one-time SavedVariables migration drops any legacy bare-name keys).
-- Contain WoW 12.x keystone-API taint into a private tooltip frame so the shared `GameTooltip` stays clean.
+- fix: duplicate alt rows when the realm wasn't ready at addon load.
+- fix: the keystone tooltip no longer taints Blizzard's shared tooltip.
 
-## v0.9.1-beta (2026-05-13)
+## [v0.9.1-beta](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v0.9.1-beta) — 2026-05-13
 
-Polish from first in-game test.
+- fix: source checkouts no longer show a literal `@project-version@` in the tooltip footer.
+- fix: guild rows deduplicate against the Party section.
+- feat: guild keys shown by default.
 
-- Dev-build footer (no more literal `@project-version@` showing in raw source checkouts).
-- Guild rows deduplicate against the Party section.
-- Deterministic smart-sort tiebreaker (rating).
-- Guild visibility default flipped on.
-
-## v0.9.0-beta (2026-05-13)
+## [v0.9.0-beta](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v0.9.0-beta) — 2026-05-13
 
 Initial public beta.
 
-- Broker bar: current keystone (`<Dungeon> +<Level>`) or `no key`.
-- Tooltip: *You*, *Party*, *Alts*, *Guild* sections with class-colored names, key-tier-colored levels, weekly vault progress (`vault +<N>`), and current-season rating.
-- LibKeystone-powered party and guild comm — interoperates with BigWigs and any other LibKeystone-aware addon.
-- Guild section persists across `/reload`, wipes on weekly reset.
-- Party members are deduplicated from Guild so a guildmate currently in your party doesn't appear twice.
-- Guild filter: online-only by default; configurable cap (Top 10 / 15 / 25 / 50 / All).
-- Guild sort: *Smart* (near my key level), *Highest first*, or *Alphabetic*.
-- Per-channel guild hide (privacy: broadcast "no key" to guildmates only).
-- Per-character alt snapshots in SavedVariables, stale-faded after a week unseen.
-- Click handlers: open keystone holder, insert keystone hyperlink into chat, open settings.
-- Native WoW Settings panel.
+- feat: broker bar shows your current keystone (`<Dungeon> +<Level>`) or `no key`.
+- feat: tooltip with *You*, *Party*, *Alts*, and *Guild* sections — class-coloured names, key-tier-coloured levels, weekly vault progress (`vault +N`), and current-season rating.
+- feat: LibKeystone-powered party and guild comm — interoperates with BigWigs and any other LibKeystone-aware addon.
+- feat: guild filtering (online-only by default, configurable cap), sorting (*Smart* / *Highest first* / *Alphabetic*), and a per-channel privacy hide.
+- feat: per-character alt snapshots that stale-fade after a week unseen; guild data wipes on weekly reset.
+- feat: click handlers (open keystone holder, insert keystone link into chat, open settings) and a native WoW Settings panel.
