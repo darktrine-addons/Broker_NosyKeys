@@ -13,3 +13,4 @@ manual-changelog:
 
 ignore:
     - RELEASE.md
+    - CHORES.md
