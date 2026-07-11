@@ -1,4 +1,4 @@
-## Interface: 120005
+## Interface: 120007
 ## Category: Data Broker
 ## Title: |cffffffffNosyKeys|r
 ## IconTexture: Interface\Icons\inv_relics_hourglass
