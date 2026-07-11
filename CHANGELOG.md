@@ -3,6 +3,10 @@
 User-facing changes, newest first. Internal and dev-tooling work lives in the
 git history, not here.
 
+## [v1.1.6](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.6) — 2026-07-11
+
+- chore: updated for WoW patch **12.0.7** (Interface 120007). No functional changes — every API the addon uses is unchanged in 12.0.7.
+
 ## [v1.1.5](https://github.com/darktrine-addons/Broker_NosyKeys/releases/tag/v1.1.5) — 2026-06-03
 
 - chore: release notes are now posted per-version to CurseForge and Wago; the full history lives in this file.
